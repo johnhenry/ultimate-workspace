@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  dev-workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_VERSION: ${NODE_VERSION:-22}
+        CODE_SERVER_VERSION: ${CODE_SERVER_VERSION:-4.101.2}
+        CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:-1.0.48}
+        DENO_VERSION: ${DENO_VERSION:-2.4}
+        BUN_VERSION: ${BUN_VERSION:-1.2.17}
+        NVM_VERSION: ${NVM_VERSION:-0.40.3}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.13}
+        MINICONDA_VERSION: ${MINICONDA_VERSION:-py313_24.7.1-0}
+        UV_VERSION: ${UV_VERSION:-0.7.20}
+        RUFF_VERSION: ${RUFF_VERSION:-0.12.0}
+    container_name: ultimate-js-workspace
+    hostname: js-workspace
+    privileged: true  # Required for Docker-in-Docker
+    environment:
+      - SSH_PUBLIC_KEY=${SSH_PUBLIC_KEY}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CODE_SERVER_PASSWORD=${CODE_SERVER_PASSWORD}
+      - NODE_VERSION=${NODE_VERSION:-22}
+      - PYTHON_VERSION=${PYTHON_VERSION:-3.13}
+      - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY}
+      - WEBMIN_PASSWORD=${WEBMIN_PASSWORD}
+      - CONDA_ENV=${CONDA_ENV:-base}
+    ports:
+      - "2222:2222"     # SSH
+      - "8080:8080"     # Claude Code UI
+      - "8081:8081"     # Code Server
+      - "8082:8082"     # VS Code Server
+      - "10000:10000"   # Webmin
+      - "2375:2375"     # Docker daemon (optional)
+    volumes:
+      - ./workspace:/workspace
+      - developer-home:/home/developer
+      - /var/run/docker.sock:/var/run/docker.sock:rw  # Docker socket for DinD
+      - tailscale-state:/var/lib/tailscale  # Tailscale persistent state
+      - conda-pkgs:/opt/conda/pkgs  # Conda package cache
+    restart: unless-stopped
+    networks:
+      - dev-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2222"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  developer-home:
+    driver: local
+  tailscale-state:
+    driver: local
+  conda-pkgs:
+    driver: local
+
+networks:
+  dev-network:
+    driver: bridge
