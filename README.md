@@ -34,7 +34,6 @@ A comprehensive Docker-based development environment featuring multiple JavaScri
 - **Supervisor** - Process management
 - **Ubuntu 22.04 LTS** - Stable base system
 - **Tailscale** - Mesh VPN for secure networking
-- **Webmin** (Port 10000) - Web-based system administration
 
 ## Quick Start
 
@@ -69,9 +68,6 @@ PYTHON_VERSION=3.13
 
 # Tailscale auth key (optional)
 TAILSCALE_AUTHKEY="your-tailscale-auth-key"
-
-# Webmin password (default: webmin)
-WEBMIN_PASSWORD="your-secure-password"
 ```
 
 3. Start the container:
@@ -84,7 +80,6 @@ docker-compose up -d
 - VS Code Server: http://localhost:8082
 - Claude Code UI: http://localhost:8080
 - Copy Party: http://localhost:8083
-- Webmin: http://localhost:10000 (root/webmin or your password)
 - SSH: `ssh developer@localhost -p 2222`
 
 ### Using Docker CLI
@@ -100,7 +95,6 @@ docker run -d \
   -p 8081:8081 \
   -p 8082:8082 \
   -p 8083:8083 \
-  -p 10000:10000 \
   -v $(pwd)/workspace:/workspace \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -e SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa.pub)" \
@@ -125,7 +119,6 @@ docker run -d \
 | `NODE_VERSION` | Default Node.js version | 22 |
 | `PYTHON_VERSION` | Python version | 3.13 |
 | `TAILSCALE_AUTHKEY` | Tailscale authentication key | None |
-| `WEBMIN_PASSWORD` | Webmin admin password | webmin |
 | `CONDA_ENV` | Default conda environment | base |
 
 ### Volumes
@@ -147,7 +140,6 @@ docker run -d \
 | 8081 | Code Server |
 | 8082 | VS Code Server |
 | 8083 | Copy Party |
-| 10000 | Webmin |
 | 2375 | Docker Daemon (optional) |
 
 ## Usage Examples
@@ -226,14 +218,6 @@ tailscale status
 # Access services via Tailscale IP (no port forwarding needed)
 # Example: http://100.x.x.x:8081 for Code Server
 ```
-
-### System Administration with Webmin
-Access Webmin at http://localhost:10000
-- Manage users and groups
-- Configure system services
-- Monitor system resources
-- Manage Docker containers
-- Configure firewall rules
 
 ## Security Considerations
 

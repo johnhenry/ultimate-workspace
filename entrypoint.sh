@@ -60,15 +60,6 @@ else
 fi
 export CODE_SERVER_PASSWORD
 
-# Set Webmin password if provided, otherwise use default
-if [ -n "$WEBMIN_PASSWORD" ]; then
-    log "Configuring Webmin password..."
-    echo "root:$WEBMIN_PASSWORD" | chpasswd
-    /etc/webmin/changepass.pl /etc/webmin root "$WEBMIN_PASSWORD"
-else
-    log "Using default Webmin password (webmin)"
-fi
-
 # Configure Tailscale if auth key provided
 if [ -n "$TAILSCALE_AUTHKEY" ]; then
     log "Configuring Tailscale..."
@@ -147,13 +138,6 @@ health_check() {
         log "WARNING: Claude Code UI is not responding on port 8080"
     fi
     
-    # Check Webmin
-    if nc -z localhost 10000 2>/dev/null; then
-        log "Webmin is running on port 10000"
-    else
-        log "WARNING: Webmin is not responding on port 10000"
-    fi
-    
     # Check Copy Party
     if nc -z localhost 8083 2>/dev/null; then
         log "Copy Party is running on port 8083"
@@ -197,7 +181,6 @@ cat > /workspace/WELCOME.md <<'EOF'
 - **Code Server**: http://localhost:8081 (Password: check logs or set CODE_SERVER_PASSWORD)
 - **VS Code Server**: http://localhost:8082
 - **Copy Party**: http://localhost:8083 (File sharing and management)
-- **Webmin**: http://localhost:10000 (Username: root, Password: webmin or WEBMIN_PASSWORD)
 - **Docker**: Available inside container
 - **Tailscale**: VPN networking (configure with TAILSCALE_AUTHKEY)
 
@@ -222,7 +205,6 @@ cat > /workspace/WELCOME.md <<'EOF'
 - **Git**: Latest version
 - **Docker**: Docker-in-Docker enabled
 - **Tailscale**: Mesh VPN for secure networking
-- **Webmin**: Web-based system administration
 - **Copy Party**: Web-based file manager and sharing
 
 ## Environment Variables
@@ -238,14 +220,12 @@ Set these when running the container:
 - `NODE_VERSION`: Default Node.js version (default: 22)
 - `PYTHON_VERSION`: Python version (default: 3.13)
 - `TAILSCALE_AUTHKEY`: Tailscale authentication key
-- `WEBMIN_PASSWORD`: Webmin admin password (default: webmin)
 
 ## Getting Started
 
 1. Access Code Server at http://localhost:8081 with the password from logs
-2. Access Webmin at http://localhost:10000 (root/webmin)
-3. SSH into the container: `ssh developer@localhost -p 2222`
-4. All development happens in `/workspace` directory
+2. SSH into the container: `ssh developer@localhost -p 2222`
+3. All development happens in `/workspace` directory
 
 ## Python Quick Start
 
@@ -275,7 +255,6 @@ You can then access all services through your Tailscale IP without port forwardi
 
 Check service logs: `docker logs <container-name>`
 Check individual service logs in: `/var/log/supervisor/`
-Webmin logs: `/var/webmin/miniserv.log`
 Tailscale status: `tailscale status`
 EOF
 

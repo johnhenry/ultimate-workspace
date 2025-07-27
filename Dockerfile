@@ -63,15 +63,6 @@ RUN apt-get update && apt-get install -y \
     # Network tools
     iptables \
     iproute2 \
-    # Webmin dependencies
-    perl \
-    libnet-ssleay-perl \
-    openssl \
-    libauthen-pam-perl \
-    libpam-runtime \
-    libio-pty-perl \
-    libtime-piece-perl \
-    shared-mime-info \
     # Other utilities
     sudo \
     locales \
@@ -102,25 +93,12 @@ RUN curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.noarmor.gpg | tee 
     apt-get install -y tailscale && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Webmin
-RUN wget -q -O- https://download.webmin.com/developers-key.asc | apt-key add - && \
-    echo "deb https://download.webmin.com/download/repository sarge contrib" >> /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get install -y webmin && \
-    rm -rf /var/lib/apt/lists/*
-
 # Configure SSH
 RUN mkdir /var/run/sshd && \
     sed -i 's/#Port 22/Port 2222/' /etc/ssh/sshd_config && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config && \
     sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-
-# Configure Webmin
-RUN sed -i 's/ssl=1/ssl=0/' /etc/webmin/miniserv.conf && \
-    echo "allow=0.0.0.0/0" >> /etc/webmin/miniserv.conf && \
-    echo "root:webmin" | chpasswd && \
-    /etc/webmin/changepass.pl /etc/webmin root webmin
 
 # Install Python from deadsnakes PPA for latest version
 RUN add-apt-repository ppa:deadsnakes/ppa && \
@@ -253,7 +231,7 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Expose ports
-EXPOSE 2222 8080 8081 8082 8083 2375 10000
+EXPOSE 2222 8080 8081 8082 8083 2375
 
 # Set working directory
 WORKDIR /workspace

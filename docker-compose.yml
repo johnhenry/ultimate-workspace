@@ -28,7 +28,6 @@ services:
       - NODE_VERSION=${NODE_VERSION:-22}
       - PYTHON_VERSION=${PYTHON_VERSION:-3.13}
       - TAILSCALE_AUTHKEY=${TAILSCALE_AUTHKEY}
-      - WEBMIN_PASSWORD=${WEBMIN_PASSWORD}
       - CONDA_ENV=${CONDA_ENV:-base}
     ports:
       - "2222:2222"     # SSH
@@ -36,7 +35,6 @@ services:
       - "8081:8081"     # Code Server
       - "8082:8082"     # VS Code Server
       - "8083:8083"     # Copy Party
-      - "10000:10000"   # Webmin
       - "2375:2375"     # Docker daemon (optional)
     volumes:
       - ./workspace:/workspace
