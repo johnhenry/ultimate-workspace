@@ -8,50 +8,54 @@ log() {
 
 log "Starting Ultimate JavaScript Development Workspace initialization..."
 
-# Configure SSH public key if provided
-if [ -n "$SSH_PUBLIC_KEY" ]; then
-    log "Configuring SSH public key authentication..."
-    mkdir -p /home/developer/.ssh
-    echo "$SSH_PUBLIC_KEY" > /home/developer/.ssh/authorized_keys
-    chmod 700 /home/developer/.ssh
-    chmod 600 /home/developer/.ssh/authorized_keys
-    chown -R developer:developer /home/developer/.ssh
-fi
+# Parallel initialization for independent configurations
+{
+    # Configure SSH public key if provided
+    if [ -n "$SSH_PUBLIC_KEY" ]; then
+        log "Configuring SSH public key authentication..."
+        mkdir -p /home/developer/.ssh
+        echo "$SSH_PUBLIC_KEY" > /home/developer/.ssh/authorized_keys
+        chmod 700 /home/developer/.ssh
+        chmod 600 /home/developer/.ssh/authorized_keys
+        chown -R developer:developer /home/developer/.ssh
+    fi
+} &
 
-# Set up Claude API key if provided
-if [ -n "$CLAUDE_API_KEY" ]; then
-    log "Configuring Claude API key..."
-    echo "export CLAUDE_API_KEY=$CLAUDE_API_KEY" >> /home/developer/.bashrc
-    export CLAUDE_API_KEY=$CLAUDE_API_KEY
-fi
+{
+    # Set up API keys in parallel
+    if [ -n "$CLAUDE_API_KEY" ]; then
+        log "Configuring Claude API key..."
+        echo "export CLAUDE_API_KEY=$CLAUDE_API_KEY" >> /home/developer/.bashrc
+        export CLAUDE_API_KEY=$CLAUDE_API_KEY
+    fi
 
-# Set up Gemini API key if provided
-if [ -n "$GEMINI_API_KEY" ]; then
-    log "Configuring Gemini API key..."
-    echo "export GEMINI_API_KEY=$GEMINI_API_KEY" >> /home/developer/.bashrc
-    export GEMINI_API_KEY=$GEMINI_API_KEY
-fi
+    if [ -n "$GEMINI_API_KEY" ]; then
+        log "Configuring Gemini API key..."
+        echo "export GEMINI_API_KEY=$GEMINI_API_KEY" >> /home/developer/.bashrc
+        export GEMINI_API_KEY=$GEMINI_API_KEY
+    fi
 
-# Set up Qwen API configuration if provided
-if [ -n "$QWEN_API_KEY" ]; then
-    log "Configuring Qwen API key..."
-    echo "export OPENAI_API_KEY=$QWEN_API_KEY" >> /home/developer/.bashrc
-    export OPENAI_API_KEY=$QWEN_API_KEY
-fi
+    # Set up Qwen API configuration if provided
+    if [ -n "$QWEN_API_KEY" ]; then
+        log "Configuring Qwen API key..."
+        echo "export OPENAI_API_KEY=$QWEN_API_KEY" >> /home/developer/.bashrc
+        export OPENAI_API_KEY=$QWEN_API_KEY
+    fi
 
-if [ -n "$QWEN_BASE_URL" ]; then
-    log "Configuring Qwen base URL..."
-    echo "export OPENAI_BASE_URL=$QWEN_BASE_URL" >> /home/developer/.bashrc
-    export OPENAI_BASE_URL=$QWEN_BASE_URL
-fi
+    if [ -n "$QWEN_BASE_URL" ]; then
+        log "Configuring Qwen base URL..."
+        echo "export OPENAI_BASE_URL=$QWEN_BASE_URL" >> /home/developer/.bashrc
+        export OPENAI_BASE_URL=$QWEN_BASE_URL
+    fi
 
-if [ -n "$QWEN_MODEL" ]; then
-    log "Configuring Qwen model..."
-    echo "export OPENAI_MODEL=$QWEN_MODEL" >> /home/developer/.bashrc
-    export OPENAI_MODEL=$QWEN_MODEL
-fi
+    if [ -n "$QWEN_MODEL" ]; then
+        log "Configuring Qwen model..."
+        echo "export OPENAI_MODEL=$QWEN_MODEL" >> /home/developer/.bashrc
+        export OPENAI_MODEL=$QWEN_MODEL
+    fi
+} &
 
-# Set Code Server password if provided, otherwise generate one
+# Set Code Server password (needs to be synchronous)
 if [ -z "$CODE_SERVER_PASSWORD" ]; then
     CODE_SERVER_PASSWORD=$(openssl rand -base64 32)
     log "Generated Code Server password: $CODE_SERVER_PASSWORD"
@@ -60,26 +64,7 @@ else
 fi
 export CODE_SERVER_PASSWORD
 
-# Configure Tailscale if auth key provided
-if [ -n "$TAILSCALE_AUTHKEY" ]; then
-    log "Configuring Tailscale..."
-    # Start tailscaled in background to allow auth
-    /usr/sbin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
-    sleep 5
-    tailscale up --authkey="$TAILSCALE_AUTHKEY" --hostname="js-workspace"
-    # Kill the background tailscaled as supervisor will manage it
-    pkill tailscaled || true
-fi
-
-# Create necessary directories for Tailscale
-mkdir -p /var/run/tailscale /var/lib/tailscale
-chmod 755 /var/run/tailscale /var/lib/tailscale
-
-# Set up Python environment variables
-echo "export PATH=/opt/conda/bin:\$PATH" >> /home/developer/.bashrc
-echo "export CONDA_DIR=/opt/conda" >> /home/developer/.bashrc
-
-# Create Code Server config
+# Configure Code Server
 mkdir -p /home/developer/.config/code-server
 cat > /home/developer/.config/code-server/config.yaml <<EOF
 bind-addr: 0.0.0.0:8081
@@ -89,6 +74,31 @@ cert: false
 EOF
 chown -R developer:developer /home/developer/.config
 
+# Configure Tailscale if auth key provided (background process)
+if [ -n "$TAILSCALE_AUTHKEY" ]; then
+    {
+        log "Configuring Tailscale..."
+        # Start tailscaled in background to allow auth
+        /usr/sbin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/var/run/tailscale/tailscaled.sock &
+        sleep 5
+        tailscale up --authkey="$TAILSCALE_AUTHKEY" --hostname="js-workspace"
+        # Kill the background tailscaled as supervisor will manage it
+        pkill tailscaled || true
+    } &
+fi
+
+# Create necessary directories
+{
+    mkdir -p /var/run/tailscale /var/lib/tailscale
+    chmod 755 /var/run/tailscale /var/lib/tailscale
+} &
+
+# Set up Python environment variables
+{
+    echo "export PATH=/opt/conda/bin:\$PATH" >> /home/developer/.bashrc
+    echo "export CONDA_DIR=/opt/conda" >> /home/developer/.bashrc
+} &
+
 # Ensure workspace directory has correct permissions
 chown -R developer:developer /workspace
 
@@ -96,77 +106,26 @@ chown -R developer:developer /workspace
 mkdir -p /var/log/supervisor
 chmod 755 /var/log/supervisor
 
-# Initialize conda for the developer user
-su - developer -c "conda init bash"
+# Initialize conda for the developer user (background)
+{
+    su - developer -c "conda init bash" 2>/dev/null || true
+} &
 
-# Health check function
-health_check() {
-    log "Performing health checks..."
+# Wait for all background processes to complete
+wait
+
+# Quick health check function (only log failures)
+quick_health_check() {
+    local failures=()
     
-    # Check SSH
-    if nc -z localhost 2222 2>/dev/null; then
-        log "SSH server is running on port 2222"
+    # Check critical services with timeout
+    timeout 2 nc -z localhost 2222 2>/dev/null || failures+=("SSH:2222")
+    timeout 2 docker version >/dev/null 2>&1 || failures+=("Docker")
+    
+    if [ ${#failures[@]} -gt 0 ]; then
+        log "WARNING: Some services may not be ready: ${failures[*]}"
     else
-        log "WARNING: SSH server is not responding on port 2222"
-    fi
-    
-    # Check Docker
-    if docker version >/dev/null 2>&1; then
-        log "Docker daemon is running"
-    else
-        log "WARNING: Docker daemon is not responding"
-    fi
-    
-    # Check Code Server
-    if nc -z localhost 8081 2>/dev/null; then
-        log "Code Server is running on port 8081"
-    else
-        log "WARNING: Code Server is not responding on port 8081"
-    fi
-    
-    # Check VS Code Server
-    if nc -z localhost 8082 2>/dev/null; then
-        log "VS Code Server is running on port 8082"
-    else
-        log "WARNING: VS Code Server is not responding on port 8082"
-    fi
-    
-    # Check Claude Code UI
-    if nc -z localhost 8080 2>/dev/null; then
-        log "Claude Code UI is running on port 8080"
-    else
-        log "WARNING: Claude Code UI is not responding on port 8080"
-    fi
-    
-    # Check Copy Party
-    if nc -z localhost 8083 2>/dev/null; then
-        log "Copy Party is running on port 8083"
-    else
-        log "WARNING: Copy Party is not responding on port 8083"
-    fi
-    
-    # Check Tailscale
-    if tailscale status >/dev/null 2>&1; then
-        log "Tailscale is connected"
-    else
-        log "WARNING: Tailscale is not connected (auth key may be required)"
-    fi
-    
-    # Check Python tools
-    if python --version >/dev/null 2>&1; then
-        log "Python is available: $(python --version)"
-    fi
-    
-    if uv --version >/dev/null 2>&1; then
-        log "uv is available: $(uv --version)"
-    fi
-    
-    if ruff --version >/dev/null 2>&1; then
-        log "ruff is available: $(ruff --version)"
-    fi
-    
-    if conda --version >/dev/null 2>&1; then
-        log "conda is available: $(conda --version)"
+        log "Core services initialized successfully"
     fi
 }
 
@@ -262,8 +221,8 @@ chown developer:developer /workspace/WELCOME.md
 
 log "Initialization complete. Starting supervisord..."
 
-# Run health check after a delay
-(sleep 45 && health_check) &
+# Run quick health check after a short delay (background)
+(sleep 10 && quick_health_check) &
 
 # Execute the command passed to the container
 exec "$@"

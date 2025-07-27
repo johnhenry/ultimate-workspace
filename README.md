@@ -280,12 +280,100 @@ volumes:
   - ./config/ssh:/home/developer/.ssh
 ```
 
+## Automated Testing
+
+### Build Verification
+```bash
+# Test the build process
+docker build -t workspace-test .
+
+# Run with minimal configuration
+docker run --rm -it workspace-test /bin/bash -c "node --version && python --version && deno --version && bun --version"
+```
+
+### Service Availability Tests
+```bash
+# Start the container
+docker-compose up -d
+
+# Wait for services to start
+sleep 30
+
+# Test all ports
+for port in 2222 8080 8081 8082 8083; do
+    nc -zv localhost $port && echo "Port $port: OK" || echo "Port $port: FAILED"
+done
+
+# Test SSH access (requires SSH key)
+ssh -o ConnectTimeout=5 developer@localhost -p 2222 'echo "SSH: OK"'
+
+# Test web services
+curl -s http://localhost:8081 | grep -q "code-server" && echo "Code Server: OK"
+curl -s http://localhost:8083 | grep -q "copyparty" && echo "Copy Party: OK"
+```
+
+### Tool Functionality Tests
+```bash
+# Test inside container
+docker exec ultimate-js-workspace /bin/bash -c '
+    # JavaScript tools
+    node -e "console.log(\"Node.js: OK\")"
+    deno eval "console.log(\"Deno: OK\")"
+    bun eval "console.log(\"Bun: OK\")"
+    
+    # Python tools
+    python -c "print(\"Python: OK\")"
+    uv --version && echo "uv: OK"
+    ruff --version && echo "ruff: OK"
+    conda --version && echo "conda: OK"
+    
+    # Development tools
+    git --version && echo "Git: OK"
+    docker --version && echo "Docker: OK"
+'
+```
+
+### Performance Benchmarks
+```bash
+# Measure startup time
+time docker-compose up -d
+
+# Check resource usage
+docker stats --no-stream ultimate-js-workspace
+
+# Image size
+docker images | grep ultimate-js-workspace
+```
+
+### Continuous Integration Example
+```yaml
+# .github/workflows/test.yml
+name: Test Workspace
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build image
+        run: docker build -t workspace-test .
+      - name: Run tests
+        run: |
+          docker run --rm workspace-test /bin/bash -c "
+            node --version &&
+            python --version &&
+            deno --version &&
+            bun --version
+          "
+```
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Submit a pull request
+4. Run automated tests
+5. Submit a pull request
 
 ## License
 
