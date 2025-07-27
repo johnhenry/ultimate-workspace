@@ -32,6 +32,25 @@ if [ -n "$GEMINI_API_KEY" ]; then
     export GEMINI_API_KEY=$GEMINI_API_KEY
 fi
 
+# Set up Qwen API configuration if provided
+if [ -n "$QWEN_API_KEY" ]; then
+    log "Configuring Qwen API key..."
+    echo "export OPENAI_API_KEY=$QWEN_API_KEY" >> /home/developer/.bashrc
+    export OPENAI_API_KEY=$QWEN_API_KEY
+fi
+
+if [ -n "$QWEN_BASE_URL" ]; then
+    log "Configuring Qwen base URL..."
+    echo "export OPENAI_BASE_URL=$QWEN_BASE_URL" >> /home/developer/.bashrc
+    export OPENAI_BASE_URL=$QWEN_BASE_URL
+fi
+
+if [ -n "$QWEN_MODEL" ]; then
+    log "Configuring Qwen model..."
+    echo "export OPENAI_MODEL=$QWEN_MODEL" >> /home/developer/.bashrc
+    export OPENAI_MODEL=$QWEN_MODEL
+fi
+
 # Set Code Server password if provided, otherwise generate one
 if [ -z "$CODE_SERVER_PASSWORD" ]; then
     CODE_SERVER_PASSWORD=$(openssl rand -base64 32)
@@ -135,6 +154,13 @@ health_check() {
         log "WARNING: Webmin is not responding on port 10000"
     fi
     
+    # Check Copy Party
+    if nc -z localhost 8083 2>/dev/null; then
+        log "Copy Party is running on port 8083"
+    else
+        log "WARNING: Copy Party is not responding on port 8083"
+    fi
+    
     # Check Tailscale
     if tailscale status >/dev/null 2>&1; then
         log "Tailscale is connected"
@@ -170,6 +196,7 @@ cat > /workspace/WELCOME.md <<'EOF'
 - **Claude Code UI**: http://localhost:8080
 - **Code Server**: http://localhost:8081 (Password: check logs or set CODE_SERVER_PASSWORD)
 - **VS Code Server**: http://localhost:8082
+- **Copy Party**: http://localhost:8083 (File sharing and management)
 - **Webmin**: http://localhost:10000 (Username: root, Password: webmin or WEBMIN_PASSWORD)
 - **Docker**: Available inside container
 - **Tailscale**: VPN networking (configure with TAILSCALE_AUTHKEY)
@@ -190,11 +217,13 @@ cat > /workspace/WELCOME.md <<'EOF'
 ## Development Tools
 
 - **Claude Code CLI**: Available as `claude` command
+- **Qwen Code CLI**: Available as `qwen` command (requires API configuration)
 - **Gemini CLI**: Placeholder installed (replace with actual when available)
 - **Git**: Latest version
 - **Docker**: Docker-in-Docker enabled
 - **Tailscale**: Mesh VPN for secure networking
 - **Webmin**: Web-based system administration
+- **Copy Party**: Web-based file manager and sharing
 
 ## Environment Variables
 
@@ -202,6 +231,9 @@ Set these when running the container:
 - `SSH_PUBLIC_KEY`: Your SSH public key for authentication
 - `CLAUDE_API_KEY`: API key for Claude Code CLI
 - `GEMINI_API_KEY`: API key for Gemini CLI
+- `QWEN_API_KEY`: API key for Qwen Code CLI
+- `QWEN_BASE_URL`: Base URL for Qwen API (default: Alibaba Cloud)
+- `QWEN_MODEL`: Qwen model to use (default: qwen3-coder-plus)
 - `CODE_SERVER_PASSWORD`: Password for Code Server (auto-generated if not set)
 - `NODE_VERSION`: Default Node.js version (default: 22)
 - `PYTHON_VERSION`: Python version (default: 3.13)

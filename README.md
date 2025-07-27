@@ -18,6 +18,7 @@ A comprehensive Docker-based development environment featuring multiple JavaScri
 ### Development Tools
 - **Claude Code CLI** - AI-powered coding assistant
 - **Claude Code UI** - Web interface for Claude Code
+- **Qwen Code CLI** - Alibaba's AI coding assistant
 - **Gemini CLI** - Google's AI assistant (placeholder)
 - **Git** - Latest version
 - **Docker-in-Docker** - Run containers inside the workspace
@@ -26,6 +27,7 @@ A comprehensive Docker-based development environment featuring multiple JavaScri
 - **Code Server** (Port 8081) - VS Code in the browser
 - **VS Code Server** (Port 8082) - Alternative VS Code instance
 - **Claude Code UI** (Port 8080) - AI coding interface
+- **Copy Party** (Port 8083) - Web-based file manager and sharing
 
 ### System Features
 - **SSH Server** (Port 2222) - Secure remote access
@@ -52,6 +54,9 @@ SSH_PUBLIC_KEY="your-ssh-public-key-here"
 # API Keys (optional)
 CLAUDE_API_KEY="your-claude-api-key"
 GEMINI_API_KEY="your-gemini-api-key"
+QWEN_API_KEY="your-qwen-api-key"
+QWEN_BASE_URL="https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+QWEN_MODEL="qwen3-coder-plus"
 
 # Code Server password (auto-generated if not set)
 CODE_SERVER_PASSWORD="your-secure-password"
@@ -78,6 +83,7 @@ docker-compose up -d
 - Code Server: http://localhost:8081
 - VS Code Server: http://localhost:8082
 - Claude Code UI: http://localhost:8080
+- Copy Party: http://localhost:8083
 - Webmin: http://localhost:10000 (root/webmin or your password)
 - SSH: `ssh developer@localhost -p 2222`
 
@@ -93,6 +99,8 @@ docker run -d \
   -p 8080:8080 \
   -p 8081:8081 \
   -p 8082:8082 \
+  -p 8083:8083 \
+  -p 10000:10000 \
   -v $(pwd)/workspace:/workspace \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -e SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa.pub)" \
@@ -110,6 +118,9 @@ docker run -d \
 | `SSH_PUBLIC_KEY` | SSH public key for authentication | None |
 | `CLAUDE_API_KEY` | API key for Claude Code CLI | None |
 | `GEMINI_API_KEY` | API key for Gemini CLI | None |
+| `QWEN_API_KEY` | API key for Qwen Code CLI | None |
+| `QWEN_BASE_URL` | Base URL for Qwen API | Alibaba Cloud |
+| `QWEN_MODEL` | Qwen model to use | qwen3-coder-plus |
 | `CODE_SERVER_PASSWORD` | Password for Code Server | Auto-generated |
 | `NODE_VERSION` | Default Node.js version | 22 |
 | `PYTHON_VERSION` | Python version | 3.13 |
@@ -135,6 +146,7 @@ docker run -d \
 | 8080 | Claude Code UI |
 | 8081 | Code Server |
 | 8082 | VS Code Server |
+| 8083 | Copy Party |
 | 10000 | Webmin |
 | 2375 | Docker Daemon (optional) |
 
@@ -161,11 +173,25 @@ nvm install 20
 nvm use 20
 ```
 
-### Using Claude Code CLI
+### Using AI Code Assistants
 ```bash
-# Inside the container (requires CLAUDE_API_KEY)
+# Claude Code CLI (requires CLAUDE_API_KEY)
 claude "Write a hello world Express server"
+
+# Qwen Code CLI (requires QWEN_API_KEY)
+export OPENAI_API_KEY=$QWEN_API_KEY
+export OPENAI_BASE_URL="https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+export OPENAI_MODEL="qwen3-coder-plus"
+qwen "Create a FastAPI REST API with authentication"
 ```
+
+### Using Copy Party
+Access Copy Party at http://localhost:8083 for:
+- Web-based file browsing and management
+- Upload/download files via browser
+- Share files with temporary links
+- Stream media files
+- Markdown preview
 
 ### Python Development
 ```bash

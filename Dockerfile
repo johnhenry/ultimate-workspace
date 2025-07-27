@@ -230,6 +230,20 @@ RUN mkdir -p /opt/vs-code-server/extensions && \
 RUN echo '#!/bin/bash\necho "Gemini CLI placeholder - please install actual CLI when available"' > /usr/local/bin/gemini && \
     chmod +x /usr/local/bin/gemini
 
+# Install Qwen Code CLI
+# Note: Qwen Code requires Node.js 20+ and is adapted from Gemini CLI
+RUN export NVM_DIR="/home/developer/.nvm" && \
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
+    git clone https://github.com/QwenLM/qwen-code.git /tmp/qwen-code && \
+    cd /tmp/qwen-code && \
+    npm install && \
+    npm link && \
+    rm -rf /tmp/qwen-code
+
+# Install Copy Party file server
+RUN python3 -m pip install copyparty && \
+    mkdir -p /opt/copyparty
+
 # Create supervisord configuration
 RUN mkdir -p /etc/supervisor/conf.d
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -239,7 +253,7 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Expose ports
-EXPOSE 2222 8080 8081 8082 2375 10000
+EXPOSE 2222 8080 8081 8082 8083 2375 10000
 
 # Set working directory
 WORKDIR /workspace
